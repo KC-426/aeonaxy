@@ -1,14 +1,14 @@
 const express = require('express')
 const courseController = require('../controllers/course')
-const userAuth = require('../middleware/auth')
+const adminAuth = require('../middleware/auth')
 
 const router = express.Router()
 
-router.post('/add/course', courseController.createCourse)
-router.get('/get/course', courseController.fetchCourse)
-router.put('/update/course/:id', courseController.updateCourse)
-router.delete('/delete/course/:id', courseController.deleteCourseById)
-router.delete('/delete/course', courseController.deleteCourses)
+router.post('/add/course', adminAuth, courseController.createCourse)
+router.get('/get/course', adminAuth, courseController.fetchCourse)
+router.put('/update/course/:id', adminAuth, courseController.updateCourse)
+router.delete('/delete/course/:id', adminAuth, courseController.deleteCourseById)
+router.delete('/delete/course', adminAuth, courseController.deleteCourses)
 
 
 module.exports = router

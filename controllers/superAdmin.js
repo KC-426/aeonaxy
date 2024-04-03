@@ -64,12 +64,7 @@ const superAdminLogin = async (req, res) => {
     }
 
     const token = jwt.sign({ email }, "kuldeep_secret_key", {
-      expiresIn: "1h",
-    });
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      expiresIn: 3600,
     });
 
     res
