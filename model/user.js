@@ -7,7 +7,8 @@ const userSchema = new pgp.helpers.ColumnSet([
   'image_name',
   'image_url',
   'phone_no',
-  'gender' 
+  'gender',
+  'courses_enrolled'
 ], { table: 'users' });
 
 module.exports = userSchema;

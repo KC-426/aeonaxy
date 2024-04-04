@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const pgp = require("pg-promise")();
 const db = require("../database/db");
 const jwt = require("jsonwebtoken");
+const courseSchema = require("../model/course");
 
 const userSignup = async (req, res) => {
   try {
@@ -81,9 +82,8 @@ const userLogin = async (req, res) => {
   }
 };
 
-
 const userProfile = async (req, res, next) => {
-  console.log('data')
+  console.log("data");
   const { id } = req.params;
   try {
     console.log("Request body:", req.body);
@@ -99,29 +99,111 @@ const userProfile = async (req, res, next) => {
       RETURNING *;
     `;
 
-    const updatedUser = await db.oneOrNone(updateUserQuery, [phone_no, gender, image_name, image_url, id]);
+    const updatedUser = await db.oneOrNone(updateUserQuery, [
+      phone_no,
+      gender,
+      image_name,
+      image_url,
+      id,
+    ]);
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: "User profile updated", user: updatedUser });
+    res
+      .status(200)
+      .json({ message: "User profile updated", user: updatedUser });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-const updateProfile = async(req, res) => {
+const updateProfile = async (req, res) => {
   try {
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Internal Server Error" });
   }
-}
+};
+
+const enrolledCourses = async (req, res) => {
+  const { userId, courseId } = req.params;
+  try {
+    const user = await db.oneOrNone(
+      "SELECT * FROM users WHERE id = $1",
+      userId
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.enrolledCourses = user.enrolledCourses || [];
+
+    const course = await db.oneOrNone(
+      "SELECT * FROM course WHERE id = $1",
+      courseId
+    );
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    const isEnrolled = user.enrolledCourses.some(
+      (enrolledCourse) => enrolledCourse.id === course.id
+    );
+    if (isEnrolled) {
+      return res
+        .status(400)
+        .json({ message: "User is already enrolled in the course" });
+    }
+
+    user.enrolledCourses.push({
+      id: course.id,
+      coursename: course.coursename,
+      price: course.price,
+      aboutcourse: course.aboutcourse,
+      category: course.category,
+      level: course.level,
+      popularity: course.popularity,
+    });
+
+    await db.none("UPDATE users SET enrolledCourses = $1 WHERE id = $2", [
+      user.enrolledCourses,
+      userId,
+    ]);
+
+    res
+      .status(200)
+      .json({ message: "User enrolled in the course successfully", user });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const viewEnrolledCourses = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await db.oneOrNone("SELECT * from users WHERE id = $1", id);
+    console.log(user);
+
+    const enrolledCourses = user.enrolledcourses
+      ? JSON.parse(user.enrolledcourses)
+      : [];
+
+    res
+      .status(200)
+      .json({ message: "Enrolled courses are fetched", enrolledCourses });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 exports.userSignup = userSignup;
 exports.userLogin = userLogin;
-exports.userProfile = userProfile
-exports.updateProfile = updateProfile
+exports.userProfile = userProfile;
+exports.updateProfile = updateProfile;
+exports.enrolledCourses = enrolledCourses;
+exports.viewEnrolledCourses = viewEnrolledCourses;

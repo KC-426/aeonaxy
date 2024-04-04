@@ -20,5 +20,8 @@ router.post('/user/signup', userController.userSignup)
 router.get('/user/login', userController.userLogin)
 router.post('/user/profile/:id', upload.single('file'), userController.userProfile)
 router.patch('/user/update/profile', userController.updateProfile)
+router.post('/enroll/course/:userId/:courseId', userController.enrolledCourses)
+router.get('/view/enrolled/course/:id', userController.viewEnrolledCourses)
+
 
 module.exports = router
