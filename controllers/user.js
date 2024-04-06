@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const { Resend } = require("resend");
 const fetch = require("node-fetch");
 const cloudinary = require("cloudinary").v2;
+const crypto = require("crypto");
+
 
 if (!global.fetch) {
   global.fetch = fetch;
@@ -24,7 +26,7 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-const userSchemaColumns = ["name", "email", "password"];
+const userSchemaColumns = ["name", "email", "password", "resetPasswordToken", "resetPasswordExpires"];
 
 const userSignup = async (req, res) => {
   try {
@@ -126,6 +128,54 @@ const userLogin = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+const userForgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res
+        .status(400)
+        .json({ message: "Email is required!" });
+    }
+
+    const user = await db.oneOrNone("SELECT * FROM users WHERE email = $1", email);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate reset token and set expiration time
+    const resetPasswordToken = crypto.randomBytes(20).toString('hex');
+    const resetPasswordExpires = Date.now() + 3600000; // Token expires in 1 hour
+
+    // Update user's reset password token and expiration time in the database
+    await db.none("UPDATE users SET resetPasswordToken = $1, resetPasswordExpires = $2 WHERE email = $3", [
+      resetPasswordToken,
+      resetPasswordExpires,
+      email,
+    ]);
+
+    // Send password reset email
+    const resetLink = `http://google.com/reset-password/${resetPasswordToken}`;
+    const mail = await resend.emails.send({
+      from: "passwordreset@resend.dev",
+      to: "kuldeepchahar426@gmail.com",
+      subject: "Password Reset Request",
+      html: `<p>You are receiving this email because you (or someone else) has requested the reset of the password for your account.</p>
+             <p>Please click on the following link, or paste this into your browser to complete the process:</p>
+             <p><a href="${resetLink}">${resetLink}</a></p>
+             <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`,
+    });
+
+    console.log(mail);
+
+    res.status(200).json({ message: "Password reset email sent successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 
 const userProfile = async (req, res, next) => {
   const { id } = req.params;
@@ -264,6 +314,7 @@ const viewEnrolledCourses = async (req, res) => {
 
 exports.userSignup = userSignup;
 exports.userLogin = userLogin;
+exports.userForgotPassword = userForgotPassword
 exports.userProfile = userProfile;
 exports.enrolledCourses = enrolledCourses;
 exports.viewEnrolledCourses = viewEnrolledCourses;

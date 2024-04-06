@@ -18,6 +18,7 @@ const router = express.Router()
 
 router.post('/user/signup', userController.userSignup)
 router.get('/user/login', userController.userLogin)
+router.post('/forgot/password', userController.userForgotPassword)
 router.put('/user/profile/:id', upload.single('file'), userController.userProfile)
 router.post('/enroll/course/:userId/:courseId', userController.enrolledCourses)
 router.get('/view/enrolled/course/:id', userController.viewEnrolledCourses)
