@@ -144,18 +144,15 @@ const userForgotPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate reset token and set expiration time
     const resetPasswordToken = crypto.randomBytes(20).toString('hex');
-    const resetPasswordExpires = Date.now() + 3600000; // Token expires in 1 hour
+    const resetPasswordExpires = Date.now() + 3600000; 
 
-    // Update user's reset password token and expiration time in the database
     await db.none("UPDATE users SET resetPasswordToken = $1, resetPasswordExpires = $2 WHERE email = $3", [
       resetPasswordToken,
       resetPasswordExpires,
       email,
     ]);
 
-    // Send password reset email
     const resetLink = `http://google.com/reset-password/${resetPasswordToken}`;
     const mail = await resend.emails.send({
       from: "passwordreset@resend.dev",
