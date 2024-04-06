@@ -31,12 +31,16 @@ const superAdminSignup = async (req, res) => {
     const hashedPwd = await bcrypt.hash(password, 12);
 
     const query =
-      pgp.helpers.insert({ name, email, password: hashedPwd }, superAdminSchema) +
-      "RETURNING *";
+      pgp.helpers.insert(
+        { name, email, password: hashedPwd },
+        superAdminSchema
+      ) + "RETURNING *";
 
     const result = await db.one(query);
 
-    res.status(201).json({ message: "Superadmin created successfully!", result });
+    res
+      .status(201)
+      .json({ message: "Superadmin created successfully!", result });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal Server Error" });
@@ -76,5 +80,5 @@ const superAdminLogin = async (req, res) => {
   }
 };
 
-exports.superAdminSignup = superAdminSignup
-exports.superAdminLogin = superAdminLogin
+exports.superAdminSignup = superAdminSignup;
+exports.superAdminLogin = superAdminLogin;

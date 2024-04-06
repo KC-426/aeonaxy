@@ -3,7 +3,28 @@ const bcrypt = require("bcryptjs");
 const pgp = require("pg-promise")();
 const db = require("../database/db");
 const jwt = require("jsonwebtoken");
-const courseSchema = require("../model/course");
+const { Resend } = require("resend");
+const fetch = require("node-fetch");
+const cloudinary = require("cloudinary").v2;
+
+if (!global.fetch) {
+  global.fetch = fetch;
+
+  if (!global.Headers) {
+    const { Headers } = fetch;
+    global.Headers = Headers;
+  }
+}
+
+const resend = new Resend(process.env.API_KEY);
+
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
+
+const userSchemaColumns = ["name", "email", "password"];
 
 const userSignup = async (req, res) => {
   try {
@@ -19,8 +40,9 @@ const userSignup = async (req, res) => {
       "SELECT * FROM users WHERE email = $1",
       email
     );
+
     if (existingUser) {
-      return res.status(400).json({ message: "User already exist" });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     if (password.length < 8) {
@@ -31,13 +53,36 @@ const userSignup = async (req, res) => {
 
     const hashedPwd = await bcrypt.hash(password, 12);
 
+    const userData = {
+      name,
+      email,
+      password: hashedPwd,
+    };
+
+    const filteredColumns = userSchemaColumns.filter((col) =>
+      userData.hasOwnProperty(col)
+    );
+    const filteredUserSchema = new pgp.helpers.ColumnSet(filteredColumns, {
+      table: "users",
+    });
+
     const query =
-      pgp.helpers.insert({ name, email, password: hashedPwd }, userSchema) +
-      "RETURNING *";
+      pgp.helpers.insert(userData, filteredUserSchema) + "RETURNING *";
 
     const result = await db.one(query);
 
-    res.status(201).json({ message: "User created successfully!", result });
+    const mail = await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: "kuldeepchahar426@gmail.com",
+      subject: "Hello World",
+      html: "<p>hello kuldeep, you have successfully signed up! </p>",
+    });
+
+    console.log(mail);
+
+    res
+      .status(201)
+      .json({ message: "User created successfully!", result, mail });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal Server Error" });
@@ -83,7 +128,6 @@ const userLogin = async (req, res) => {
 };
 
 const userProfile = async (req, res, next) => {
-  console.log("data");
   const { id } = req.params;
   try {
     console.log("Request body:", req.body);
@@ -111,17 +155,21 @@ const userProfile = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    cloudinary.uploader.upload(
+      image_url,
+      { public_id: `user_${id}` },
+      function (error, result) {
+        if (error) {
+          console.error(error);
+        } else {
+          console.log("167 line", result);
+        }
+      }
+    );
+
     res
       .status(200)
       .json({ message: "User profile updated", user: updatedUser });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-const updateProfile = async (req, res) => {
-  try {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Internal Server Error" });
@@ -173,9 +221,22 @@ const enrolledCourses = async (req, res) => {
       userId,
     ]);
 
+    const mail = await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: "kuldeepchahar426@gmail.com",
+      subject: "Enroll in course",
+      html: "<p>hello, you have successfully enrolled in the course! </p>",
+    });
+
+    console.log(mail);
+
     res
       .status(200)
-      .json({ message: "User enrolled in the course successfully", user });
+      .json({
+        message: "User enrolled in the course successfully",
+        user,
+        mail,
+      });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Internal Server Error" });
@@ -204,6 +265,5 @@ const viewEnrolledCourses = async (req, res) => {
 exports.userSignup = userSignup;
 exports.userLogin = userLogin;
 exports.userProfile = userProfile;
-exports.updateProfile = updateProfile;
 exports.enrolledCourses = enrolledCourses;
 exports.viewEnrolledCourses = viewEnrolledCourses;

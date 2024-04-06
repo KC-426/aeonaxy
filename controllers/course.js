@@ -54,7 +54,9 @@ const fetchCourse = async (req, res) => {
     const courses = await db.any(query, [limit, offset]);
 
     if (courses.length === 0) {
-      return res.status(404).json({ message: "No courses found in the database" });
+      return res
+        .status(404)
+        .json({ message: "No courses found in the database" });
     }
 
     const totalCountQuery = "SELECT COUNT(*) FROM course";
@@ -76,7 +78,6 @@ const fetchCourse = async (req, res) => {
     if (page > 1) {
       pagination.prevPage = `/get/course?page=${page - 1}&limit=${limit}`;
     }
-
 
     res.status(200).json({
       message: "Courses fetched from the database",
@@ -179,11 +180,17 @@ const getCourseByCategory = async (req, res) => {
     const findCourse = await db.any(query, [category, limit, offset]);
 
     if (findCourse.length === 0) {
-      return res.status(404).json({ message: "No courses found in this category" });
+      return res
+        .status(404)
+        .json({ message: "No courses found in this category" });
     }
 
     const totalCountQuery = "SELECT COUNT(*) FROM course WHERE category = $1";
-    const totalCount = await db.one(totalCountQuery, category, (data) => +data.count);
+    const totalCount = await db.one(
+      totalCountQuery,
+      category,
+      (data) => +data.count
+    );
 
     const totalPages = Math.ceil(totalCount / limit);
 
@@ -195,14 +202,22 @@ const getCourseByCategory = async (req, res) => {
     };
 
     if (page < totalPages) {
-      pagination.nextPage = `/get/course/by/category?category=${category}&page=${page + 1}&limit=${limit}`;
+      pagination.nextPage = `/get/course/by/category?category=${category}&page=${
+        page + 1
+      }&limit=${limit}`;
     }
 
     if (page > 1) {
-      pagination.prevPage = `/get/course/by/category?category=${category}&page=${page - 1}&limit=${limit}`;
+      pagination.prevPage = `/get/course/by/category?category=${category}&page=${
+        page - 1
+      }&limit=${limit}`;
     }
 
-    res.status(200).json({ message: "Courses fetched by category successfully", courses: findCourse, pagination: pagination });
+    res.status(200).json({
+      message: "Courses fetched by category successfully",
+      courses: findCourse,
+      pagination: pagination,
+    });
   } catch (err) {
     console.error("Error fetching courses by category:", err);
     res.status(500).json({ message: "Internal Server Error" });
@@ -231,11 +246,17 @@ const getCourseByLevel = async (req, res) => {
     const findCourse = await db.any(query, [level, limit, offset]);
 
     if (findCourse.length === 0) {
-      return res.status(404).json({ message: "No course found with this level" });
+      return res
+        .status(404)
+        .json({ message: "No course found with this level" });
     }
 
     const totalCountQuery = "SELECT COUNT(*) FROM course WHERE level = $1";
-    const totalCount = await db.one(totalCountQuery, level, (data) => +data.count);
+    const totalCount = await db.one(
+      totalCountQuery,
+      level,
+      (data) => +data.count
+    );
 
     const totalPages = Math.ceil(totalCount / limit);
 
@@ -247,14 +268,22 @@ const getCourseByLevel = async (req, res) => {
     };
 
     if (page < totalPages) {
-      pagination.nextPage = `/get/course/by/level?level=${level}&page=${page + 1}&limit=${limit}`;
+      pagination.nextPage = `/get/course/by/level?level=${level}&page=${
+        page + 1
+      }&limit=${limit}`;
     }
 
     if (page > 1) {
-      pagination.prevPage = `/get/course/by/level?level=${level}&page=${page - 1}&limit=${limit}`;
+      pagination.prevPage = `/get/course/by/level?level=${level}&page=${
+        page - 1
+      }&limit=${limit}`;
     }
 
-    res.status(200).json({ message: "Courses fetched by level successfully", courses: findCourse, pagination: pagination });
+    res.status(200).json({
+      message: "Courses fetched by level successfully",
+      courses: findCourse,
+      pagination: pagination,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal Server Error" });
@@ -265,12 +294,12 @@ const getCourseByPopularity = async (req, res) => {
   try {
     const { popularity } = req.query;
 
-    if (!level) {
+    if (!popularity) {
       return res.status(400).json({ message: "popularity is required" });
     }
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 2;
+    const limit = parseInt(req.query.limit) || 6;
     const offset = (page - 1) * limit;
 
     const query = `
@@ -283,11 +312,17 @@ const getCourseByPopularity = async (req, res) => {
     const findCourse = await db.any(query, [popularity, limit, offset]);
 
     if (findCourse.length === 0) {
-      return res.status(404).json({ message: "No course found with this popularity" });
+      return res
+        .status(404)
+        .json({ message: "No course found with this popularity" });
     }
 
     const totalCountQuery = "SELECT COUNT(*) FROM course WHERE popularity = $1";
-    const totalCount = await db.one(totalCountQuery, popularity, (data) => +data.count);
+    const totalCount = await db.one(
+      totalCountQuery,
+      popularity,
+      (data) => +data.count
+    );
 
     const totalPages = Math.ceil(totalCount / limit);
 
@@ -299,29 +334,33 @@ const getCourseByPopularity = async (req, res) => {
     };
 
     if (page < totalPages) {
-      pagination.nextPage = `/get/course/by/popularity?popularity=${popularity}&page=${page + 1}&limit=${limit}`;
+      pagination.nextPage = `/get/course/by/popularity?popularity=${popularity}&page=${
+        page + 1
+      }&limit=${limit}`;
     }
 
     if (page > 1) {
-      pagination.prevPage = `/get/course/by/popularity?popularity=${popularity}&page=${page - 1}&limit=${limit}`;
+      pagination.prevPage = `/get/course/by/popularity?popularity=${popularity}&page=${
+        page - 1
+      }&limit=${limit}`;
     }
 
-    res.status(200).json({ message: "Courses fetched by popularity successfully", courses: findCourse, pagination: pagination });
+    res.status(200).json({
+      message: "Courses fetched by popularity successfully",
+      courses: findCourse,
+      pagination: pagination,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-
-
-
-
 exports.createCourse = createCourse;
 exports.fetchCourse = fetchCourse;
 exports.updateCourse = updateCourse;
 exports.deleteCourseById = deleteCourseById;
 exports.deleteCourses = deleteCourses;
-exports.getCourseByCategory = getCourseByCategory
-exports.getCourseByLevel = getCourseByLevel
-exports.getCourseByPopularity = getCourseByPopularity
+exports.getCourseByCategory = getCourseByCategory;
+exports.getCourseByLevel = getCourseByLevel;
+exports.getCourseByPopularity = getCourseByPopularity;
